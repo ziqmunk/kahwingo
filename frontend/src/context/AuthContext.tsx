@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type AuthResponse, type AuthTokenResponsePassword } from '@supabase/supabase-js';
 
 type AuthContextValue = {
   user: unknown;
   token: string | null;
-  login: (email: string, password: string) => Promise<unknown>;
-  logout: () => Promise<unknown>;
+  login: (email: string, password: string) => Promise<AuthTokenResponsePassword>;
+  signup: (email: string, password: string, name: string) => Promise<AuthResponse>;
+  logout: () => Promise<{ error: Error | null }>;
   loading: boolean;
 };
 
@@ -43,6 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (email: string, password: string) => supabase.auth.signInWithPassword({ email, password });
+  const signup = (email: string, password: string, name: string) =>
+    supabase.auth.signUp({ email, password, options: { data: { display_name: name } } });
   const logout = () => supabase.auth.signOut();
 
   if (loading) {
@@ -56,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  return <AuthContext.Provider value={{ user, token, login, logout, loading }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, token, login, signup, logout, loading }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

@@ -16,7 +16,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await axios.get<DashboardData>('http://localhost:5000/api/savings/dashboard', {
+        const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+        const res = await axios.get<DashboardData>(`${API_URL}/api/savings/dashboard`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setData(res.data);
