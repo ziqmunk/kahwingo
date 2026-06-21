@@ -27,7 +27,7 @@ type ContributionForm = { amount: string; note: string; contributed_at: string }
 const emptyForm: ContributionForm = { amount: '', note: '', contributed_at: new Date().toISOString().split('T')[0] };
 
 export default function Dashboard() {
-  const { token, user, workspace, refreshWorkspace } = useAuth();
+  const { token, user, workspace } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
