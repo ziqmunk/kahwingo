@@ -4,21 +4,20 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const { protect } = require('./middleware/auth');
-const { getSavingsDashboard, addContribution } = require('./controllers/savingsController');
 const workspaceRouter = require('./routes/workspace');
+const savingsRouter = require('./routes/savings');
+const checklistRouter = require('./routes/checklist');
 
 const app = express();
 
 const allowedOrigins = [
-  process.env.FRONTEND_URL,       // e.g. https://kahwingo-frontend-production.up.railway.app
-  'http://localhost:5173',        // local dev (Vite default)
-  'http://localhost:4173',        // local preview
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:4173',
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error(`CORS blocked: ${origin} not allowed`));
@@ -29,12 +28,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
-
-// Workspace routes
+// Routes
 app.use('/api/workspace', workspaceRouter);
-
-// Savings routes
-app.get('/api/savings/dashboard', protect, getSavingsDashboard);
-app.post('/api/savings/contribution', protect, addContribution);
+app.use('/api/savings', savingsRouter);
+app.use('/api/checklist', checklistRouter);
 
 module.exports = app;
