@@ -1,5 +1,5 @@
 const supabase = require('../config/supabase');
-const redisClient = require('../config/redis'); // Assume standard redis connection setup
+const { safeGet, safeSet, safeDel } = require('../config/redis');
 
 const getSavingsDashboard = async (req, res) => {
   try {
@@ -7,11 +7,15 @@ const getSavingsDashboard = async (req, res) => {
     if (!coupleId) return res.status(400).json({ error: 'No couple workspace found' });
 
     const cacheKey = `savings:${coupleId}`;
-    
-    // 1. Try fetching from Redis Cache
-    const cachedData = await redisClient.get(cacheKey);
-    if (cachedData) {
-      return res.json(JSON.parse(cachedData));
+
+    // 1. Try fetching from Redis Cache (skip if Redis is unavailable)
+    try {
+      const cachedData = await safeGet(cacheKey);
+      if (cachedData) {
+        return res.json(JSON.parse(cachedData));
+      }
+    } catch (_) {
+      // Redis unavailable — fall through to Supabase
     }
 
     // 2. Cache Miss - Fetch from Supabase PostgreSQL
@@ -28,8 +32,12 @@ const getSavingsDashboard = async (req, res) => {
       wedding_date: couple.wedding_date
     };
 
-    // 3. Save to Redis with an Expiry (e.g., 1 hour)
-    await redisClient.setEx(cacheKey, 3600, JSON.stringify(responseData));
+    // 3. Save to Redis with an Expiry — skip if Redis is unavailable
+    try {
+      await safeSet(cacheKey, 3600, JSON.stringify(responseData));
+    } catch (_) {
+      // Redis unavailable — continue without caching
+    }
 
     res.json(responseData);
   } catch (err) {
@@ -48,9 +56,12 @@ const addContribution = async (req, res) => {
 
   if (error) return res.status(400).json({ error: error.message });
 
-  // Invalidate cache on Mutation
-  await redisClient.del(`savings:${coupleId}`);
-
+  // Invalidate cache on Mutation — skip if Redis is unavailable
+  try {
+    await safeDel(`savings:${coupleId}`);
+  } catch (_) {
+    // Redis unavailable — continue
+  }
   res.status(201).json(data);
 };
 
